@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+dbxplay/__init__.py
+dbxplay/core.py
+dbxplay/icons.py
+dbxplay/templates.py
+dbxplay.egg-info/PKG-INFO
+dbxplay.egg-info/SOURCES.txt
+dbxplay.egg-info/dependency_links.txt
+dbxplay.egg-info/requires.txt
+dbxplay.egg-info/top_level.txt
+tests/test_display.py

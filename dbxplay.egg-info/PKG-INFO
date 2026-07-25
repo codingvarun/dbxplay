@@ -1,0 +1,110 @@
+Metadata-Version: 2.4
+Name: dbxplay
+Version: 0.1.0
+Summary: A Databricks-like interactive display() function for Jupyter Notebooks, AWS Glue, Google Colab, and VS Code.
+Author: Varun
+License: MIT
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: ipython>=7.0
+Provides-Extra: pandas
+Requires-Dist: pandas>=1.0; extra == "pandas"
+Provides-Extra: polars
+Requires-Dist: polars>=0.14; extra == "polars"
+Provides-Extra: pyspark
+Requires-Dist: pyspark>=3.0; extra == "pyspark"
+Provides-Extra: all
+Requires-Dist: pandas>=1.0; extra == "all"
+Requires-Dist: polars>=0.14; extra == "all"
+Requires-Dist: pyspark>=3.0; extra == "all"
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pandas>=1.0; extra == "dev"
+
+# dbxplay
+
+A Databricks-like interactive `display()` function for **Jupyter Notebooks**, **AWS Glue**, **Google Colab**, and **VS Code**.
+
+Brings the beautiful, interactive table UI from Databricks into any Python notebook environment — with sorting, filtering, searching, customizable X/Y charting, data profiling, context menus, column resizing, CSV/Excel export, and more.
+
+## Features
+
+| Feature | Description |
+| :--- | :--- |
+| 🔍 **Global Search** | Instant full-text search across all columns & values |
+| ↕️ **Column Sorting** | Click column headers to sort ascending/descending |
+| 🔽 **Column Filtering** | Per-column value checkbox dropdowns |
+| 📊 **Custom Visualization** | Customizable X/Y axes & aggregations (COUNT, SUM, AVG, MIN, MAX) |
+| 📋 **Data Profile** | Overview stats & pop-out closeable distribution charts |
+| 🎯 **Filter by Value** | Right-click any cell → "Filter by this value" |
+| 🚫 **Exclude Value** | Right-click → "Exclude this value" |
+| 📋 **Copy as CSV/TSV/Markdown** | Right-click → Copy as → choose format |
+| 📥 **Download CSV / Excel** | Top `Table ∨` dropdown → Download |
+| 📐 **Column Resizing** | Drag column borders to resize |
+| 📄 **Side Panel** | Row detail view panel |
+| 🔢 **Data Type Icons** | Automatic type badges (ABC, #, 1.2, T/F, 📅, {}) |
+| ✅ **Zero Dependencies** | Self-contained HTML/CSS/JS — works everywhere |
+
+## Installation
+
+```bash
+pip install dbxplay
+```
+
+Or install locally in editable mode:
+
+```bash
+pip install -e .
+```
+
+## Quick Start
+
+```python
+from dbxplay import display
+import pandas as pd
+
+df = pd.read_csv("your_data.csv")
+display(df)
+```
+
+## Supported Data Types
+
+- **Pandas DataFrames**
+- **Polars DataFrames**
+- **PySpark DataFrames** (auto-limited to prevent OOM)
+- **Lists of dicts** — `[{"a": 1, "b": 2}, ...]`
+- **Dicts of lists** — `{"a": [1, 2], "b": [3, 4]}`
+
+## Usage
+
+```python
+from dbxplay import display
+
+# Basic usage
+display(df)
+
+# With options
+display(df, limit=500, title="My Data", height=400)
+```
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `data` | DataFrame/list/dict | *(required)* | The data to display |
+| `limit` | int | 1000 | Max rows to render |
+| `title` | str | "Table" | Tab title in the top bar |
+| `height` | int | None | Fixed height in px (auto-sizes to ~520px) |
+
+## Context Menu (Right-Click)
+
+Right-click any cell to access:
+- **Copy** (⌘C)
+- **Copy as** → CSV, TSV, Markdown
+- **Filter by this value**
+- **Exclude this value**
+- **Toggle side panel**
+
+## License
+
+MIT

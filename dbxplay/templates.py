@@ -34,6 +34,7 @@ def render_table_html(
     limit: int,
     title: str = "Table",
     height: Optional[int] = None,
+    stratify_by: Optional[str] = None,
 ) -> str:
     """Render a complete, self-contained HTML string for the interactive table."""
 
@@ -52,6 +53,13 @@ def render_table_html(
     plus_icon = get_plus_svg(13)
     search_icon = get_search_svg()
     close_icon = get_close_svg(10)
+
+    stratify_pill = (
+        f'<span class="db-filter-pill" style="background:#fef3c7;color:#b45309;border:1px solid #fcd34d;">'
+        f'⚡ Stratified by \'{stratify_by}\'</span>'
+        if stratify_by
+        else ""
+    )
 
     if total_rows is not None:
         if truncated:
@@ -450,7 +458,7 @@ def render_table_html(
     <button class="db-toolbar-btn" id="{table_id}_col_vis_btn">
       Columns {chevron}
     </button>
-    <div id="{table_id}_filters" style="display:inline-flex;gap:4px;flex-wrap:wrap;"></div>
+    <div id="{table_id}_filters" style="display:inline-flex;gap:4px;flex-wrap:wrap;">{stratify_pill}</div>
     <span class="db-row-summary" id="{table_id}_summary">{row_summary}</span>
   </div>
   <div class="db-table-wrap" id="{table_id}_wrap">

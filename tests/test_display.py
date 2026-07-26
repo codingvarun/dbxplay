@@ -120,6 +120,65 @@ def test_display_empty_list():
     assert truncated is False
 
 
+def test_pyspark_pandas_conversion():
+    """Test PySpark DataFrame conversion using toPandas()."""
+    import pandas as pd
+    from dbxplay.core import _convert_to_records
+
+    class DummyField:
+        def __init__(self, name, dataType):
+            self.name = name
+            self.dataType = dataType
+
+    class DummySchema:
+        fields = [DummyField("a", "integer"), DummyField("b", "string")]
+
+    class DataFrame:
+        __module__ = "pyspark.sql.dataframe"
+        schema = DummySchema()
+        def limit(self, n):
+            return self
+        def toPandas(self):
+            return pd.DataFrame([{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}])
+
+    records, columns, total_rows, truncated = _convert_to_records(DataFrame(), limit=100)
+    assert len(records) == 2
+    assert records[0] == {"a": 1, "b": "foo"}
+    assert columns[0]["dtype_category"] == "integer"
+    assert columns[1]["dtype_category"] == "string"
+
+
+def test_stratify_by_pandas():
+    """Test stratified sampling on a Pandas DataFrame."""
+    import pandas as pd
+    from dbxplay.core import _convert_to_records
+
+    df = pd.DataFrame({
+        "category": ["A"] * 50 + ["B"] * 50 + ["C"] * 50,
+        "val": list(range(150)),
+    })
+    records, columns, total_rows, truncated = _convert_to_records(df, limit=15, stratify_by="category")
+    assert len(records) <= 15
+    cats = set(r["category"] for r in records)
+    assert "A" in cats and "B" in cats and "C" in cats
+
+
+def test_stratify_by_html_pill():
+    """Test that stratify_by renders a yellow pill indicator in HTML."""
+    from dbxplay.templates import render_table_html
+
+    html = render_table_html(
+        table_id="test_tbl",
+        records=[{"category": "A", "val": 1}],
+        columns=[{"name": "category", "dtype_category": "string"}],
+        total_rows=1,
+        truncated=False,
+        limit=100,
+        stratify_by="category",
+    )
+    assert "Stratified by 'category'" in html or "Stratified by" in html
+
+
 def test_display_unsupported_type():
     """Test that an unsupported type raises TypeError."""
     from dbxplay.core import _convert_to_records

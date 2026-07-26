@@ -136,6 +136,7 @@ def _safe_str(val: Any) -> str:
 def _convert_to_records(
     data: Any,
     limit: int = 1000,
+    stratify_by: Optional[Any] = None,
 ) -> tuple:
     """Convert various DataFrame types to a list of dicts and column metadata.
 
@@ -146,8 +147,40 @@ def _convert_to_records(
 
     if _is_pyspark_dataframe(data):
         total_rows = None
-        limited = data.limit(limit)
-        pdf = limited.toPandas()
+        temp_df = data
+        strata_col = None
+        if stratify_by:
+            try:
+                import pyspark.sql.functions as F
+                if isinstance(stratify_by, str):
+                    if stratify_by in data.columns:
+                        expr = F.col(stratify_by)
+                    else:
+                        expr = F.expr(stratify_by)
+                else:
+                    expr = stratify_by
+                temp_df = data.withColumn("_dbx_strata", expr)
+                strata_col = "_dbx_strata"
+            except Exception:
+                temp_df = data
+                strata_col = None
+
+        if strata_col and "_dbx_strata" in temp_df.columns:
+            try:
+                distinct_rows = temp_df.select("_dbx_strata").distinct().limit(50).collect()
+                distinct_vals = [r[0] for r in distinct_rows if r[0] is not None]
+                if distinct_vals:
+                    frac = min(1.0, max(0.01, (limit * 2.0) / (len(distinct_vals) * 1000.0 + 1)))
+                    fractions = {val: frac for val in distinct_vals}
+                    sampled_df = temp_df.sampleBy("_dbx_strata", fractions=fractions).drop("_dbx_strata")
+                    pdf = sampled_df.limit(limit).toPandas()
+                else:
+                    pdf = temp_df.drop("_dbx_strata").limit(limit).toPandas()
+            except Exception:
+                pdf = data.limit(limit).toPandas()
+        else:
+            pdf = data.limit(limit).toPandas()
+
         records = pdf.to_dict("records")
         columns = []
         for field in data.schema.fields:
@@ -161,7 +194,21 @@ def _convert_to_records(
     if _is_pandas_dataframe(data):
         total_rows = len(data)
         truncated = total_rows > limit
-        df_sample = data.head(limit) if truncated else data
+        if stratify_by and stratify_by in data.columns:
+            try:
+                import pandas as pd
+                groups = [g for _, g in data.groupby(stratify_by)]
+                if groups:
+                    n_per = max(1, limit // len(groups))
+                    samples = [g.sample(min(len(g), n_per)) for g in groups]
+                    df_sample = pd.concat(samples, ignore_index=True).head(limit)
+                else:
+                    df_sample = data.head(limit) if truncated else data
+            except Exception:
+                df_sample = data.head(limit) if truncated else data
+        else:
+            df_sample = data.head(limit) if truncated else data
+
         records = json.loads(df_sample.to_json(orient="records", date_format="iso", default_handler=str))
         columns = []
         for col_name in data.columns:
@@ -174,7 +221,16 @@ def _convert_to_records(
     if _is_polars_dataframe(data):
         total_rows = data.height
         truncated = total_rows > limit
-        df_sample = data.head(limit) if truncated else data
+        if stratify_by and stratify_by in data.columns:
+            try:
+                num_strata = data[stratify_by].n_unique()
+                n_per = max(1, limit // max(1, num_strata))
+                df_sample = data.group_by(stratify_by).map_groups(lambda g: g.head(n_per)).head(limit)
+            except Exception:
+                df_sample = data.head(limit) if truncated else data
+        else:
+            df_sample = data.head(limit) if truncated else data
+
         records = df_sample.to_dicts()
         columns = []
         for col_name in data.columns:
@@ -189,9 +245,21 @@ def _convert_to_records(
             return [], [], 0, False
         total_rows = len(data)
         truncated = total_rows > limit
-        sample = data[:limit]
 
-        if isinstance(sample[0], dict):
+        if isinstance(data[0], dict):
+            if stratify_by and any(stratify_by in row for row in data[:10]):
+                groups = {}
+                for row in data:
+                    val = row.get(stratify_by)
+                    groups.setdefault(val, []).append(row)
+                n_per = max(1, limit // max(1, len(groups)))
+                sample = []
+                for g in groups.values():
+                    sample.extend(g[:n_per])
+                sample = sample[:limit]
+            else:
+                sample = data[:limit]
+
             records = sample
             all_keys = []
             seen = set()
@@ -209,6 +277,7 @@ def _convert_to_records(
                 })
             return records, columns, total_rows, truncated
         else:
+            sample = data[:limit]
             records = [{"value": v} for v in sample]
             columns = [{"name": "value", "dtype_category": _infer_dtype_category(sample)}]
             return records, columns, total_rows, truncated
@@ -249,6 +318,7 @@ def display(
     limit: int = 1000,
     title: str = "Table",
     height: Optional[int] = None,
+    stratify_by: Optional[Any] = None,
 ) -> None:
     """Display a DataFrame or data structure in an interactive Databricks-style table.
 
@@ -259,10 +329,13 @@ def display(
         title: The tab title shown in the top bar (default "Table").
         height: Optional fixed height in pixels for the table container. If None,
                 the table auto-sizes up to ~500px then scrolls.
+        stratify_by: Optional column name, PySpark Column expression, or SQL expression string.
     """
     from IPython.display import display as ipy_display, HTML
 
-    records, columns, total_rows, truncated = _convert_to_records(data, limit=limit)
+    records, columns, total_rows, truncated = _convert_to_records(
+        data, limit=limit, stratify_by=stratify_by
+    )
 
     # Sanitize all record values for safe JSON embedding
     safe_records = []
@@ -273,6 +346,7 @@ def display(
         safe_records.append(safe_row)
 
     table_id = "db_table_" + uuid.uuid4().hex[:12]
+    stratify_label = str(stratify_by) if stratify_by is not None else None
 
     html_str = render_table_html(
         table_id=table_id,
@@ -283,6 +357,7 @@ def display(
         limit=limit,
         title=title,
         height=height,
+        stratify_by=stratify_label,
     )
 
     ipy_display(HTML(html_str))

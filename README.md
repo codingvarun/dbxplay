@@ -52,16 +52,17 @@ display(df)
 - **Lists of dicts** — `[{"a": 1, "b": 2}, ...]`
 - **Dicts of lists** — `{"a": [1, 2], "b": [3, 4]}`
 
-## Usage
-
 ```python
 from dbxplay import display
 
 # Basic usage
 display(df)
 
+# Stratified sampling across categories (PySpark, Pandas, Polars)
+display(df, stratify_by="user_tier")
+
 # With options
-display(df, limit=500, title="My Data", height=400)
+display(df, limit=500, title="My Data", height=400, stratify_by="country_code")
 ```
 
 ### Parameters
@@ -72,6 +73,7 @@ display(df, limit=500, title="My Data", height=400)
 | `limit` | int | 1000 | Max rows to render |
 | `title` | str | "Table" | Tab title in the top bar |
 | `height` | int | None | Fixed height in px (auto-sizes to ~520px) |
+| `stratify_by` | str | None | Optional column name to perform stratified sampling across categories |
 
 ## Context Menu (Right-Click)
 

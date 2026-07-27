@@ -151,15 +151,13 @@ def _convert_to_records(
         strata_col = None
         if stratify_by:
             try:
-                import pyspark.sql.functions as F
                 if isinstance(stratify_by, str):
                     if stratify_by in data.columns:
-                        expr = F.col(stratify_by)
+                        temp_df = data.withColumn("_dbx_strata", data[stratify_by])
                     else:
-                        expr = F.expr(stratify_by)
+                        temp_df = data.selectExpr("*", f"{stratify_by} as _dbx_strata")
                 else:
-                    expr = stratify_by
-                temp_df = data.withColumn("_dbx_strata", expr)
+                    temp_df = data.withColumn("_dbx_strata", stratify_by)
                 strata_col = "_dbx_strata"
             except Exception:
                 temp_df = data

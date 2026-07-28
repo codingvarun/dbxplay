@@ -37,6 +37,12 @@ display(df)
 # Stratified sampling across categories (PySpark, Pandas, Polars)
 display(df, stratify_by="user_tier")
 
+# Sample more rows (e.g. 5,000)
+display(df, limit=5000)
+
+# Display all rows without truncation
+display(df, limit=None)
+
 # With options
 display(df, limit=500, title="My Data", height=400, stratify_by="country_code")
 ```
@@ -46,7 +52,7 @@ display(df, limit=500, title="My Data", height=400, stratify_by="country_code")
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `data` | DataFrame/list/dict | *(required)* | The data to display |
-| `limit` | int | 1000 | Max rows to render |
+| `limit` | int / None | 1000 | Max rows to render (pass a higher int like `5000`, or `None` for unlimited) |
 | `title` | str | "Table" | Tab title in the top bar |
 | `height` | int | None | Fixed height in px (auto-sizes to ~520px) |
 | `stratify_by` | str | None | Optional column name to perform stratified sampling across categories |

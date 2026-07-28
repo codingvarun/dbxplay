@@ -237,5 +237,32 @@ def test_safe_str():
     assert _safe_str("hello") == "hello"
 
 
+def test_display_custom_limit():
+    """Test passing a custom higher limit (e.g. 5000)."""
+    import pandas as pd
+    from dbxplay.core import _convert_to_records
+
+    df = pd.DataFrame({"id": list(range(3000))})
+    records, columns, total_rows, truncated = _convert_to_records(df, limit=5000)
+
+    assert len(records) == 3000
+    assert total_rows == 3000
+    assert truncated is False
+
+
+def test_display_unlimited_limit():
+    """Test passing limit=None (unlimited)."""
+    import pandas as pd
+    from dbxplay.core import _convert_to_records
+
+    df = pd.DataFrame({"id": list(range(2500))})
+    records, columns, total_rows, truncated = _convert_to_records(df, limit=None)
+
+    assert len(records) == 2500
+    assert total_rows == 2500
+    assert truncated is False
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+

@@ -131,11 +131,9 @@ def _safe_str(val: Any) -> str:
         if val == float("-inf"):
             return "-Infinity"
     return str(val)
-
-
 def _convert_to_records(
     data: Any,
-    limit: int = 1000,
+    limit: Optional[int] = 1000,
     stratify_by: Optional[Any] = None,
 ) -> tuple:
     """Convert various DataFrame types to a list of dicts and column metadata.
@@ -144,6 +142,8 @@ def _convert_to_records(
         (records: List[Dict], columns: List[Dict], total_rows: int, truncated: bool)
         Each column dict has keys: 'name', 'dtype_category'
     """
+
+    is_unlimited = limit is None or limit <= 0
 
     if _is_pyspark_dataframe(data):
         total_rows = None
@@ -168,16 +168,17 @@ def _convert_to_records(
                 distinct_rows = temp_df.select("_dbx_strata").distinct().limit(50).collect()
                 distinct_vals = [r[0] for r in distinct_rows if r[0] is not None]
                 if distinct_vals:
-                    frac = min(1.0, max(0.01, (limit * 2.0) / (len(distinct_vals) * 1000.0 + 1)))
+                    eff_limit = limit if not is_unlimited else 10000
+                    frac = min(1.0, max(0.01, (eff_limit * 2.0) / (len(distinct_vals) * 1000.0 + 1)))
                     fractions = {val: frac for val in distinct_vals}
                     sampled_df = temp_df.sampleBy("_dbx_strata", fractions=fractions).drop("_dbx_strata")
-                    pdf = sampled_df.limit(limit).toPandas()
+                    pdf = sampled_df.limit(eff_limit).toPandas() if not is_unlimited else sampled_df.toPandas()
                 else:
-                    pdf = temp_df.drop("_dbx_strata").limit(limit).toPandas()
+                    pdf = temp_df.drop("_dbx_strata").limit(limit).toPandas() if not is_unlimited else temp_df.drop("_dbx_strata").toPandas()
             except Exception:
-                pdf = data.limit(limit).toPandas()
+                pdf = data.limit(limit).toPandas() if not is_unlimited else data.toPandas()
         else:
-            pdf = data.limit(limit).toPandas()
+            pdf = data.limit(limit).toPandas() if not is_unlimited else data.toPandas()
 
         records = pdf.to_dict("records")
         columns = []
@@ -186,20 +187,21 @@ def _convert_to_records(
                 "name": field.name,
                 "dtype_category": _spark_dtype_to_category(str(field.dataType)),
             })
-        truncated = len(records) >= limit
+        truncated = False if is_unlimited else (len(records) >= limit)
         return records, columns, total_rows, truncated
 
     if _is_pandas_dataframe(data):
         total_rows = len(data)
-        truncated = total_rows > limit
+        truncated = False if is_unlimited else (total_rows > limit)
         if stratify_by and stratify_by in data.columns:
             try:
                 import pandas as pd
                 groups = [g for _, g in data.groupby(stratify_by)]
                 if groups:
-                    n_per = max(1, limit // len(groups))
+                    eff_limit = limit if not is_unlimited else total_rows
+                    n_per = max(1, eff_limit // len(groups))
                     samples = [g.sample(min(len(g), n_per)) for g in groups]
-                    df_sample = pd.concat(samples, ignore_index=True).head(limit)
+                    df_sample = pd.concat(samples, ignore_index=True).head(eff_limit)
                 else:
                     df_sample = data.head(limit) if truncated else data
             except Exception:
@@ -218,12 +220,13 @@ def _convert_to_records(
 
     if _is_polars_dataframe(data):
         total_rows = data.height
-        truncated = total_rows > limit
+        truncated = False if is_unlimited else (total_rows > limit)
         if stratify_by and stratify_by in data.columns:
             try:
                 num_strata = data[stratify_by].n_unique()
-                n_per = max(1, limit // max(1, num_strata))
-                df_sample = data.group_by(stratify_by).map_groups(lambda g: g.head(n_per)).head(limit)
+                eff_limit = limit if not is_unlimited else total_rows
+                n_per = max(1, eff_limit // max(1, num_strata))
+                df_sample = data.group_by(stratify_by).map_groups(lambda g: g.head(n_per)).head(eff_limit)
             except Exception:
                 df_sample = data.head(limit) if truncated else data
         else:
@@ -242,7 +245,7 @@ def _convert_to_records(
         if not data:
             return [], [], 0, False
         total_rows = len(data)
-        truncated = total_rows > limit
+        truncated = False if is_unlimited else (total_rows > limit)
 
         if isinstance(data[0], dict):
             if stratify_by and any(stratify_by in row for row in data[:10]):
@@ -250,13 +253,14 @@ def _convert_to_records(
                 for row in data:
                     val = row.get(stratify_by)
                     groups.setdefault(val, []).append(row)
-                n_per = max(1, limit // max(1, len(groups)))
+                eff_limit = limit if not is_unlimited else total_rows
+                n_per = max(1, eff_limit // max(1, len(groups)))
                 sample = []
                 for g in groups.values():
                     sample.extend(g[:n_per])
-                sample = sample[:limit]
+                sample = sample[:eff_limit]
             else:
-                sample = data[:limit]
+                sample = data if is_unlimited else data[:limit]
 
             records = sample
             all_keys = []
@@ -275,7 +279,7 @@ def _convert_to_records(
                 })
             return records, columns, total_rows, truncated
         else:
-            sample = data[:limit]
+            sample = data if is_unlimited else data[:limit]
             records = [{"value": v} for v in sample]
             columns = [{"name": "value", "dtype_category": _infer_dtype_category(sample)}]
             return records, columns, total_rows, truncated
@@ -284,8 +288,8 @@ def _convert_to_records(
         col_names = list(data.keys())
         max_len = max((len(v) if isinstance(v, list) else 1) for v in data.values()) if data else 0
         total_rows = max_len
-        truncated = total_rows > limit
-        actual_len = min(max_len, limit)
+        truncated = False if is_unlimited else (total_rows > limit)
+        actual_len = max_len if is_unlimited else min(max_len, limit)
         records = []
         for i in range(actual_len):
             row = {}
@@ -313,7 +317,7 @@ def _convert_to_records(
 
 def display(
     data: Any,
-    limit: int = 1000,
+    limit: Optional[int] = 1000,
     title: str = "Table",
     height: Optional[int] = None,
     stratify_by: Optional[Any] = None,
@@ -322,11 +326,11 @@ def display(
 
     Args:
         data: A PySpark, Pandas, or Polars DataFrame, or a list of dicts / dict of lists.
-        limit: Maximum number of rows to display (default 1000). PySpark DataFrames
-               are automatically limited to avoid OOM.
+        limit: Maximum number of rows to display (default 1000). Pass any custom integer
+               (e.g., limit=5000) or limit=None to display all rows without truncation.
         title: The tab title shown in the top bar (default "Table").
         height: Optional fixed height in pixels for the table container. If None,
-                the table auto-sizes up to ~500px then scrolls.
+                the table auto-sizes up to ~520px then scrolls.
         stratify_by: Optional column name, PySpark Column expression, or SQL expression string.
     """
     from IPython.display import display as ipy_display, HTML

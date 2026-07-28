@@ -31,7 +31,7 @@ def render_table_html(
     columns: List[Dict[str, str]],
     total_rows: Optional[int],
     truncated: bool,
-    limit: int,
+    limit: Optional[int],
     title: str = "Table",
     height: Optional[int] = None,
     stratify_by: Optional[str] = None,
@@ -61,14 +61,15 @@ def render_table_html(
         else ""
     )
 
+    limit_str = f"{limit:,}" if limit is not None else "unlimited"
     if total_rows is not None:
         if truncated:
-            row_summary = f"Showing 1 – {num_display} of {total_rows:,} rows (limited to {limit:,})"
+            row_summary = f"Showing 1 – {num_display} of {total_rows:,} rows (limited to {limit_str})"
         else:
             row_summary = f"{total_rows:,} row{'s' if total_rows != 1 else ''}"
     else:
         if truncated:
-            row_summary = f"Showing first {num_display:,} rows (limited to {limit:,})"
+            row_summary = f"Showing first {num_display:,} rows (limited to {limit_str})"
         else:
             row_summary = f"{num_display:,} row{'s' if num_display != 1 else ''}"
 

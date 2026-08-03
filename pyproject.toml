@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dbxplay"
-version = "0.2.2"
+version = "0.2.3"
 description = "A Databricks-like interactive display() function for Jupyter Notebooks, AWS Glue, Google Colab, and VS Code."
 readme = "README.md"
 requires-python = ">=3.8"

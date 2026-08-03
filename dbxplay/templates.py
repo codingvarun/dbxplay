@@ -22,6 +22,8 @@ from dbxplay.icons import (
     get_plus_svg,
     get_search_svg,
     get_close_svg,
+    get_sun_icon_svg,
+    get_moon_icon_svg,
 )
 
 
@@ -35,8 +37,19 @@ def render_table_html(
     title: str = "Table",
     height: Optional[int] = None,
     stratify_by: Optional[str] = None,
+    theme: str = "light",
 ) -> str:
     """Render a complete, self-contained HTML string for the interactive table."""
+
+    theme_clean = (theme or "light").lower().strip()
+    is_dark = theme_clean == "dark"
+    theme_class = "theme-dark" if is_dark else "theme-light"
+    accent_color = "#f97316" if is_dark else "#1a73e8"
+
+    sun_icon = get_sun_icon_svg(13)
+    moon_icon = get_moon_icon_svg(13)
+    theme_btn_icon = sun_icon if is_dark else moon_icon
+    theme_btn_label = "Light" if is_dark else "Dark"
 
     num_display = len(records)
     height_px = height or 520
@@ -46,7 +59,7 @@ def render_table_html(
 
     type_icons = {}
     for col in columns:
-        type_icons[col["name"]] = get_type_icon_svg(col["dtype_category"])
+        type_icons[col["name"]] = get_type_icon_svg(col["dtype_category"], accent_color=accent_color)
 
     sort_icon = get_sort_icon_svg()
     chevron = get_chevron_down_svg(10)
@@ -74,56 +87,126 @@ def render_table_html(
             row_summary = f"{num_display:,} row{'s' if num_display != 1 else ''}"
 
     html = f"""
-<div id="{table_id}" class="db-display-root" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #1b1f23; border: 1px solid #dce0e5; border-radius: 6px; overflow: hidden; background: #fff; position: relative;">
+<div id="{table_id}" class="db-display-root {theme_class}">
 
 <style>
   #{table_id} * {{ box-sizing: border-box; }}
+  #{table_id} {{
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    border: 1px solid var(--db-border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--db-bg);
+    color: var(--db-text);
+    position: relative;
+
+    --db-bg: #ffffff;
+    --db-topbar-bg: #f8f9fb;
+    --db-topbar-hover: #eef1f5;
+    --db-toolbar-bg: #fbfcfd;
+    --db-header-bg: #f3f5f8;
+    --db-header-hover: #e9ecf1;
+    --db-row-hover: #f7f9fc;
+    --db-row-idx-bg: #f9fafb;
+    --db-border: #dce0e5;
+    --db-border-subtle: #eaecf0;
+    --db-border-light: #f0f1f3;
+    --db-text: #1b1f23;
+    --db-text-muted: #333333;
+    --db-text-subtle: #666666;
+    --db-text-faint: #888888;
+    --db-accent: #1a73e8;
+    --db-accent-hover: #1557b0;
+    --db-accent-bg: #e8f0fe;
+    --db-accent-text: #1a56db;
+    --db-accent-sel-bg: #d2e3fc;
+    --db-dropdown-bg: #ffffff;
+    --db-dropdown-hover: #eef1f5;
+    --db-input-bg: #ffffff;
+    --db-input-border: #d0d5dd;
+    --db-card-bg: #ffffff;
+    --db-modal-backdrop: rgba(0, 0, 0, 0.45);
+    --db-toast-bg: #333333;
+    --db-toast-text: #ffffff;
+  }}
+  #{table_id}.theme-dark {{
+    --db-bg: #1e1e1e;
+    --db-topbar-bg: #252526;
+    --db-topbar-hover: #2d2d30;
+    --db-toolbar-bg: #26262a;
+    --db-header-bg: #2d2d30;
+    --db-header-hover: #38383c;
+    --db-row-hover: #2a2d34;
+    --db-row-idx-bg: #252526;
+    --db-border: #3c3c3c;
+    --db-border-subtle: #333333;
+    --db-border-light: #2d2d30;
+    --db-text: #cccccc;
+    --db-text-muted: #bbbbbb;
+    --db-text-subtle: #999999;
+    --db-text-faint: #777777;
+    --db-accent: #f97316;
+    --db-accent-hover: #ea580c;
+    --db-accent-bg: rgba(249, 115, 22, 0.18);
+    --db-accent-text: #ff9d42;
+    --db-accent-sel-bg: rgba(249, 115, 22, 0.28);
+    --db-dropdown-bg: #252526;
+    --db-dropdown-hover: #37373d;
+    --db-input-bg: #1e1e1e;
+    --db-input-border: #444444;
+    --db-card-bg: #252526;
+    --db-modal-backdrop: rgba(0, 0, 0, 0.65);
+    --db-toast-bg: #111111;
+    --db-toast-text: #ffffff;
+  }}
+
   #{table_id} .db-topbar {{
-    display: flex; align-items: center; border-bottom: 1px solid #dce0e5;
-    background: #f8f9fb; padding: 0; height: 38px; user-select: none; position: relative;
+    display: flex; align-items: center; border-bottom: 1px solid var(--db-border);
+    background: var(--db-topbar-bg); padding: 0; height: 38px; user-select: none; position: relative;
     overflow-x: auto; overflow-y: hidden; flex-shrink: 0;
   }}
   #{table_id} .db-tab {{
     display: inline-flex; align-items: center; gap: 5px; padding: 0 14px; height: 100%;
-    font-size: 13px; font-weight: 500; color: #666; cursor: pointer;
+    font-size: 13px; font-weight: 500; color: var(--db-text-subtle); cursor: pointer;
     border-bottom: 2px solid transparent; background: transparent; white-space: nowrap; flex-shrink: 0;
   }}
-  #{table_id} .db-tab.active {{ color: #1a73e8; border-bottom-color: #1a73e8; }}
-  #{table_id} .db-tab:hover {{ background: #eef1f5; }}
+  #{table_id} .db-tab.active {{ color: var(--db-accent); border-bottom-color: var(--db-accent); }}
+  #{table_id} .db-tab:hover {{ background: var(--db-topbar-hover); }}
   #{table_id} .db-tab-close {{
     display: inline-flex; align-items: center; margin-left: 4px; padding: 2px;
     border-radius: 3px; cursor: pointer;
   }}
-  #{table_id} .db-tab-close:hover {{ background: rgba(0,0,0,0.1); }}
+  #{table_id} .db-tab-close:hover {{ background: rgba(128,128,128,0.2); }}
   #{table_id} .db-plus-btn {{
     display: inline-flex; align-items: center; justify-content: center;
     width: 32px; height: 32px; margin-left: 2px; cursor: pointer;
     border-radius: 4px; border: none; background: transparent; flex-shrink: 0;
     position: relative;
   }}
-  #{table_id} .db-plus-btn:hover {{ background: #e2e6ea; }}
+  #{table_id} .db-plus-btn:hover {{ background: var(--db-topbar-hover); }}
   #{table_id} .db-plus-btn svg, #{table_id} .db-tab-chevron svg {{ pointer-events: none; }}
 
   /* Dropdowns */
   #{table_id} .db-dropdown {{
-    position: absolute; z-index: 1000; min-width: 220px; background: #fff;
-    border: 1px solid #dce0e5; border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.06);
+    position: absolute; z-index: 1000; min-width: 220px; background: var(--db-dropdown-bg);
+    border: 1px solid var(--db-border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
     padding: 4px 0; display: none;
   }}
   #{table_id} .db-dropdown.open {{ display: block; }}
   #{table_id} .db-dropdown-item {{
     display: flex; align-items: center; gap: 8px; padding: 7px 14px;
-    font-size: 13px; color: #333; cursor: pointer; white-space: nowrap;
+    font-size: 13px; color: var(--db-text); cursor: pointer; white-space: nowrap;
   }}
-  #{table_id} .db-dropdown-item:hover {{ background: #eef1f5; }}
-  #{table_id} .db-dropdown-item .db-shortcut {{ margin-left: auto; color: #888; font-size: 11px; }}
-  #{table_id} .db-dropdown-sep {{ height: 1px; background: #e5e7eb; margin: 4px 0; }}
+  #{table_id} .db-dropdown-item:hover {{ background: var(--db-dropdown-hover); }}
+  #{table_id} .db-dropdown-item .db-shortcut {{ margin-left: auto; color: var(--db-text-faint); font-size: 11px; }}
+  #{table_id} .db-dropdown-sep {{ height: 1px; background: var(--db-border-subtle); margin: 4px 0; }}
   #{table_id} .db-dropdown-item.has-sub {{ position: relative; }}
-  #{table_id} .db-dropdown-item.has-sub::after {{ content: '›'; margin-left: auto; font-size: 15px; color: #888; }}
+  #{table_id} .db-dropdown-item.has-sub::after {{ content: '›'; margin-left: auto; font-size: 15px; color: var(--db-text-faint); }}
   #{table_id} .db-sub-dropdown {{
-    position: absolute; left: 100%; top: -4px; min-width: 120px; background: #fff;
-    border: 1px solid #dce0e5; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    position: absolute; left: 100%; top: -4px; min-width: 120px; background: var(--db-dropdown-bg);
+    border: 1px solid var(--db-border); border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
     padding: 4px 0; display: none;
   }}
   #{table_id} .db-dropdown-item.has-sub:hover .db-sub-dropdown {{ display: block; }}
@@ -131,220 +214,220 @@ def render_table_html(
   /* Toolbar */
   #{table_id} .db-toolbar {{
     display: flex; align-items: center; padding: 5px 10px; gap: 8px;
-    border-bottom: 1px solid #eaecf0; background: #fbfcfd; min-height: 36px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--db-border-subtle); background: var(--db-toolbar-bg); min-height: 36px; flex-wrap: wrap;
   }}
   #{table_id} .db-search-box {{
-    display: inline-flex; align-items: center; background: #fff;
-    border: 1px solid #d0d5dd; border-radius: 4px; padding: 3px 8px; gap: 5px; flex-shrink: 0;
+    display: inline-flex; align-items: center; background: var(--db-input-bg);
+    border: 1px solid var(--db-input-border); border-radius: 4px; padding: 3px 8px; gap: 5px; flex-shrink: 0;
   }}
-  #{table_id} .db-search-box:focus-within {{ border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26,115,232,0.15); }}
+  #{table_id} .db-search-box:focus-within {{ border-color: var(--db-accent); box-shadow: 0 0 0 2px var(--db-accent-bg); }}
   #{table_id} .db-search-input {{
     border: none; outline: none; font-size: 12px; width: 180px; background: transparent;
-    color: #333; font-family: inherit;
+    color: var(--db-text); font-family: inherit;
   }}
   #{table_id} .db-toolbar-btn {{
     display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px;
-    border: 1px solid #d0d5dd; border-radius: 4px; background: #fff; cursor: pointer;
-    font-size: 12px; color: #444; font-family: inherit; white-space: nowrap;
+    border: 1px solid var(--db-input-border); border-radius: 4px; background: var(--db-input-bg); cursor: pointer;
+    font-size: 12px; color: var(--db-text-muted); font-family: inherit; white-space: nowrap;
   }}
-  #{table_id} .db-toolbar-btn:hover {{ background: #f3f5f8; border-color: #bbb; }}
-  #{table_id} .db-toolbar-btn.has-active {{ border-color: #1a73e8; color: #1a73e8; background: #e8f0fe; }}
+  #{table_id} .db-toolbar-btn:hover {{ background: var(--db-topbar-hover); }}
+  #{table_id} .db-toolbar-btn.has-active {{ border-color: var(--db-accent); color: var(--db-accent); background: var(--db-accent-bg); }}
   #{table_id} .db-filter-pill {{
-    display: inline-flex; align-items: center; gap: 4px; background: #e8f0fe;
-    color: #1a56db; border-radius: 12px; padding: 2px 10px 2px 8px;
+    display: inline-flex; align-items: center; gap: 4px; background: var(--db-accent-bg);
+    color: var(--db-accent-text); border-radius: 12px; padding: 2px 10px 2px 8px;
     font-size: 11px; font-weight: 500; cursor: default; white-space: nowrap;
   }}
   #{table_id} .db-filter-pill .db-pill-close {{
     cursor: pointer; display: inline-flex; align-items: center;
     margin-left: 2px; border-radius: 50%; padding: 1px;
   }}
-  #{table_id} .db-filter-pill .db-pill-close:hover {{ background: rgba(26,86,219,0.15); }}
-  #{table_id} .db-row-summary {{ margin-left: auto; font-size: 11px; color: #777; white-space: nowrap; }}
+  #{table_id} .db-filter-pill .db-pill-close:hover {{ background: rgba(128,128,128,0.25); }}
+  #{table_id} .db-row-summary {{ margin-left: auto; font-size: 11px; color: var(--db-text-faint); white-space: nowrap; }}
 
   /* Column Selector Dropdown */
   #{table_id} .db-col-selector {{
     position: absolute; z-index: 1001; width: 260px; max-height: 360px;
-    background: #fff; border: 1px solid #dce0e5; border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: none; flex-direction: column;
+    background: var(--db-dropdown-bg); border: 1px solid var(--db-border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25); display: none; flex-direction: column;
   }}
   #{table_id} .db-col-selector.open {{ display: flex; }}
   #{table_id} .db-col-selector-header {{
-    padding: 8px 12px; border-bottom: 1px solid #eaecf0; display: flex;
+    padding: 8px 12px; border-bottom: 1px solid var(--db-border-subtle); display: flex;
     align-items: center; gap: 6px;
   }}
   #{table_id} .db-col-selector-header input {{
-    flex: 1; border: 1px solid #d0d5dd; border-radius: 4px; padding: 4px 8px;
-    font-size: 12px; outline: none; font-family: inherit;
+    flex: 1; border: 1px solid var(--db-input-border); background: var(--db-input-bg); color: var(--db-text);
+    border-radius: 4px; padding: 4px 8px; font-size: 12px; outline: none; font-family: inherit;
   }}
-  #{table_id} .db-col-selector-header input:focus {{ border-color: #1a73e8; }}
+  #{table_id} .db-col-selector-header input:focus {{ border-color: var(--db-accent); }}
   #{table_id} .db-col-selector-body {{
     flex: 1; overflow-y: auto; padding: 4px 0;
   }}
   #{table_id} .db-col-selector-item {{
     display: flex; align-items: center; gap: 8px; padding: 5px 12px;
-    cursor: pointer; font-size: 12px; color: #333;
+    cursor: pointer; font-size: 12px; color: var(--db-text);
   }}
-  #{table_id} .db-col-selector-item:hover {{ background: #f3f5f8; }}
-  #{table_id} .db-col-selector-item input[type="checkbox"] {{ cursor: pointer; accent-color: #1a73e8; }}
+  #{table_id} .db-col-selector-item:hover {{ background: var(--db-dropdown-hover); }}
+  #{table_id} .db-col-selector-item input[type="checkbox"] {{ cursor: pointer; accent-color: var(--db-accent); }}
   #{table_id} .db-col-selector-actions {{
-    padding: 6px 12px; border-top: 1px solid #eaecf0; display: flex; gap: 8px; justify-content: flex-end;
+    padding: 6px 12px; border-top: 1px solid var(--db-border-subtle); display: flex; gap: 8px; justify-content: flex-end;
   }}
   #{table_id} .db-col-selector-actions button {{
     padding: 4px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;
-    font-family: inherit; border: 1px solid #d0d5dd; background: #fff; color: #333;
+    font-family: inherit; border: 1px solid var(--db-input-border); background: var(--db-input-bg); color: var(--db-text);
   }}
-  #{table_id} .db-col-selector-actions button:hover {{ background: #f3f5f8; }}
+  #{table_id} .db-col-selector-actions button:hover {{ background: var(--db-dropdown-hover); }}
   #{table_id} .db-col-selector-actions button.primary {{
-    background: #1a73e8; color: #fff; border-color: #1a73e8;
+    background: var(--db-accent); color: #fff; border-color: var(--db-accent);
   }}
-  #{table_id} .db-col-selector-actions button.primary:hover {{ background: #1557b0; }}
+  #{table_id} .db-col-selector-actions button.primary:hover {{ background: var(--db-accent-hover); }}
 
   /* Column Filter Dropdown */
   #{table_id} .db-col-filter {{
     position: absolute; z-index: 1002; width: 240px; max-height: 320px;
-    background: #fff; border: 1px solid #dce0e5; border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: none; flex-direction: column;
+    background: var(--db-dropdown-bg); border: 1px solid var(--db-border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25); display: none; flex-direction: column;
   }}
   #{table_id} .db-col-filter.open {{ display: flex; }}
   #{table_id} .db-col-filter-search {{
-    padding: 8px; border-bottom: 1px solid #eaecf0;
+    padding: 8px; border-bottom: 1px solid var(--db-border-subtle);
   }}
   #{table_id} .db-col-filter-search input {{
-    width: 100%; border: 1px solid #d0d5dd; border-radius: 4px; padding: 5px 8px;
-    font-size: 12px; outline: none; font-family: inherit;
+    width: 100%; border: 1px solid var(--db-input-border); background: var(--db-input-bg); color: var(--db-text);
+    border-radius: 4px; padding: 5px 8px; font-size: 12px; outline: none; font-family: inherit;
   }}
-  #{table_id} .db-col-filter-search input:focus {{ border-color: #1a73e8; }}
+  #{table_id} .db-col-filter-search input:focus {{ border-color: var(--db-accent); }}
   #{table_id} .db-col-filter-selectall {{
-    padding: 5px 10px; border-bottom: 1px solid #f0f1f3; display: flex;
-    align-items: center; gap: 8px; font-size: 12px; color: #444; cursor: pointer;
+    padding: 5px 10px; border-bottom: 1px solid var(--db-border-light); display: flex;
+    align-items: center; gap: 8px; font-size: 12px; color: var(--db-text-muted); cursor: pointer;
   }}
-  #{table_id} .db-col-filter-selectall:hover {{ background: #f3f5f8; }}
+  #{table_id} .db-col-filter-selectall:hover {{ background: var(--db-dropdown-hover); }}
   #{table_id} .db-col-filter-body {{
     flex: 1; overflow-y: auto; padding: 2px 0; max-height: 180px;
   }}
   #{table_id} .db-col-filter-item {{
     display: flex; align-items: center; gap: 8px; padding: 4px 10px;
-    cursor: pointer; font-size: 12px; color: #333;
+    cursor: pointer; font-size: 12px; color: var(--db-text);
   }}
-  #{table_id} .db-col-filter-item:hover {{ background: #f3f5f8; }}
-  #{table_id} .db-col-filter-item input[type="checkbox"] {{ cursor: pointer; accent-color: #1a73e8; flex-shrink: 0; }}
+  #{table_id} .db-col-filter-item:hover {{ background: var(--db-dropdown-hover); }}
+  #{table_id} .db-col-filter-item input[type="checkbox"] {{ cursor: pointer; accent-color: var(--db-accent); flex-shrink: 0; }}
   #{table_id} .db-col-filter-item span {{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
-  #{table_id} .db-col-filter-item .val-count {{ margin-left: auto; color: #999; font-size: 11px; flex-shrink: 0; }}
+  #{table_id} .db-col-filter-item .val-count {{ margin-left: auto; color: var(--db-text-faint); font-size: 11px; flex-shrink: 0; }}
   #{table_id} .db-col-filter-actions {{
-    padding: 6px 8px; border-top: 1px solid #eaecf0; display: flex; gap: 6px; justify-content: flex-end;
+    padding: 6px 8px; border-top: 1px solid var(--db-border-subtle); display: flex; gap: 6px; justify-content: flex-end;
   }}
   #{table_id} .db-col-filter-actions button {{
     padding: 4px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;
-    font-family: inherit; border: 1px solid #d0d5dd; background: #fff; color: #333;
+    font-family: inherit; border: 1px solid var(--db-input-border); background: var(--db-input-bg); color: var(--db-text);
   }}
-  #{table_id} .db-col-filter-actions button:hover {{ background: #f3f5f8; }}
+  #{table_id} .db-col-filter-actions button:hover {{ background: var(--db-dropdown-hover); }}
   #{table_id} .db-col-filter-actions button.primary {{
-    background: #1a73e8; color: #fff; border-color: #1a73e8;
+    background: var(--db-accent); color: #fff; border-color: var(--db-accent);
   }}
-  #{table_id} .db-col-filter-actions button.primary:hover {{ background: #1557b0; }}
+  #{table_id} .db-col-filter-actions button.primary:hover {{ background: var(--db-accent-hover); }}
 
   /* Table */
   #{table_id} .db-table-wrap {{ overflow: auto; max-height: {height_px}px; position: relative; }}
   #{table_id} table {{ width: 100%; border-collapse: separate; border-spacing: 0; table-layout: auto; }}
   #{table_id} thead {{ position: sticky; top: 0; z-index: 10; }}
   #{table_id} thead th {{
-    background: #f3f5f8; border-bottom: 1px solid #dce0e5; border-right: 1px solid #eaecf0;
-    padding: 0; font-weight: 600; font-size: 12px; color: #444;
+    background: var(--db-header-bg); border-bottom: 1px solid var(--db-border); border-right: 1px solid var(--db-border-subtle);
+    padding: 0; font-weight: 600; font-size: 12px; color: var(--db-text-muted);
     text-align: left; white-space: nowrap; user-select: none; position: relative;
   }}
   #{table_id} thead th:last-child {{ border-right: none; }}
   #{table_id} thead th .db-th-content {{
     display: flex; align-items: center; padding: 6px 10px; gap: 4px; cursor: pointer;
   }}
-  #{table_id} thead th:hover {{ background: #e9ecf1; }}
+  #{table_id} thead th:hover {{ background: var(--db-header-hover); }}
   #{table_id} thead th .db-th-inner {{ display: inline-flex; align-items: center; gap: 4px; flex: 1; }}
   #{table_id} thead th .db-sort-icon {{ opacity: 0.35; transition: opacity 0.15s; flex-shrink: 0; }}
   #{table_id} thead th:hover .db-sort-icon {{ opacity: 0.7; }}
-  #{table_id} thead th.sorted-asc .db-sort-asc {{ fill: #1a73e8; opacity: 1; }}
+  #{table_id} thead th.sorted-asc .db-sort-asc {{ fill: var(--db-accent); opacity: 1; }}
   #{table_id} thead th.sorted-asc .db-sort-icon,
   #{table_id} thead th.sorted-desc .db-sort-icon {{ opacity: 1; }}
-  #{table_id} thead th.sorted-desc .db-sort-desc {{ fill: #1a73e8; opacity: 1; }}
-  #{table_id} thead th.has-filter .db-th-content {{ background: #e8f0fe; }}
+  #{table_id} thead th.sorted-desc .db-sort-desc {{ fill: var(--db-accent); opacity: 1; }}
+  #{table_id} thead th.has-filter .db-th-content {{ background: var(--db-accent-bg); }}
   #{table_id} .db-th-filter-btn {{
     display: inline-flex; align-items: center; padding: 2px; border-radius: 3px;
     cursor: pointer; opacity: 0; transition: opacity 0.1s; flex-shrink: 0;
   }}
   #{table_id} thead th:hover .db-th-filter-btn {{ opacity: 0.6; }}
-  #{table_id} thead th.has-filter .db-th-filter-btn {{ opacity: 1; color: #1a73e8; }}
-  #{table_id} .db-th-filter-btn:hover {{ opacity: 1 !important; background: rgba(0,0,0,0.06); }}
+  #{table_id} thead th.has-filter .db-th-filter-btn {{ opacity: 1; color: var(--db-accent); }}
+  #{table_id} .db-th-filter-btn:hover {{ opacity: 1 !important; background: rgba(128,128,128,0.15); }}
   #{table_id} .db-row-idx {{
-    width: 48px; min-width: 48px; max-width: 48px; text-align: right; color: #999;
-    font-size: 11px; font-weight: 400; background: #f9fafb; cursor: default;
-    padding-right: 12px !important; border-right: 1px solid #eaecf0;
+    width: 48px; min-width: 48px; max-width: 48px; text-align: right; color: var(--db-text-faint);
+    font-size: 11px; font-weight: 400; background: var(--db-row-idx-bg); cursor: default;
+    padding-right: 12px !important; border-right: 1px solid var(--db-border-subtle);
   }}
-  #{table_id} thead th.db-row-idx {{ background: #f3f5f8; padding: 6px 12px 6px 6px !important; }}
-  #{table_id} thead th.db-row-idx:hover {{ background: #f3f5f8; }}
+  #{table_id} thead th.db-row-idx {{ background: var(--db-header-bg); padding: 6px 12px 6px 6px !important; }}
+  #{table_id} thead th.db-row-idx:hover {{ background: var(--db-header-bg); }}
   #{table_id} tbody td {{
-    padding: 5px 10px; border-bottom: 1px solid #f0f1f3; border-right: 1px solid #f5f6f8;
-    font-size: 13px; color: #1b1f23; white-space: nowrap; overflow: hidden;
+    padding: 5px 10px; border-bottom: 1px solid var(--db-border-light); border-right: 1px solid var(--db-border-light);
+    font-size: 13px; color: var(--db-text); white-space: nowrap; overflow: hidden;
     text-overflow: ellipsis; max-width: 320px; cursor: default;
   }}
   #{table_id} tbody td:last-child {{ border-right: none; }}
-  #{table_id} tbody tr:hover td {{ background: #f7f9fc; }}
-  #{table_id} tbody td.db-null {{ color: #bbb; font-style: italic; }}
+  #{table_id} tbody tr:hover td {{ background: var(--db-row-hover); }}
+  #{table_id} tbody td.db-null {{ color: var(--db-text-faint); font-style: italic; }}
   #{table_id} tbody td.db-bool-true {{ color: #16a34a; font-weight: 500; }}
   #{table_id} tbody td.db-bool-false {{ color: #b91c1c; font-weight: 500; }}
   #{table_id} tbody td.db-number {{ font-variant-numeric: tabular-nums; text-align: right; }}
 
   /* Excel-like selection */
-  #{table_id} tbody td.db-sel {{ background: #d2e3fc !important; }}
-  #{table_id} tbody td.db-sel-border-top {{ border-top: 2px solid #1a73e8 !important; }}
-  #{table_id} tbody td.db-sel-border-bottom {{ border-bottom: 2px solid #1a73e8 !important; }}
-  #{table_id} tbody td.db-sel-border-left {{ border-left: 2px solid #1a73e8 !important; }}
-  #{table_id} tbody td.db-sel-border-right {{ border-right: 2px solid #1a73e8 !important; }}
+  #{table_id} tbody td.db-sel {{ background: var(--db-accent-sel-bg) !important; }}
+  #{table_id} tbody td.db-sel-border-top {{ border-top: 2px solid var(--db-accent) !important; }}
+  #{table_id} tbody td.db-sel-border-bottom {{ border-bottom: 2px solid var(--db-accent) !important; }}
+  #{table_id} tbody td.db-sel-border-left {{ border-left: 2px solid var(--db-accent) !important; }}
+  #{table_id} tbody td.db-sel-border-right {{ border-right: 2px solid var(--db-accent) !important; }}
 
   /* Column Resize */
   #{table_id} .db-resize-handle {{
     position: absolute; right: 0; top: 0; bottom: 0; width: 5px; cursor: col-resize; z-index: 5;
   }}
-  #{table_id} .db-resize-handle:hover, #{table_id} .db-resize-handle.active {{ background: #1a73e8; opacity: 0.3; }}
+  #{table_id} .db-resize-handle:hover, #{table_id} .db-resize-handle.active {{ background: var(--db-accent); opacity: 0.5; }}
 
   /* Context Menu */
   #{table_id} .db-context-menu {{
-    position: fixed; z-index: 10000; min-width: 210px; background: #fff;
-    border: 1px solid #dce0e5; border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.14), 0 2px 6px rgba(0,0,0,0.06);
-    padding: 4px 0; display: none; font-size: 13px;
+    position: fixed; z-index: 10000; min-width: 210px; background: var(--db-dropdown-bg);
+    border: 1px solid var(--db-border); border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    padding: 4px 0; display: none; font-size: 13px; color: var(--db-text);
   }}
   #{table_id} .db-context-menu.open {{ display: block; }}
   #{table_id} .db-ctx-item {{
     display: flex; align-items: center; gap: 8px; padding: 7px 14px;
-    cursor: pointer; white-space: nowrap; color: #333;
+    cursor: pointer; white-space: nowrap; color: var(--db-text);
   }}
-  #{table_id} .db-ctx-item:hover {{ background: #eef1f5; }}
-  #{table_id} .db-ctx-item .ctx-shortcut {{ margin-left: auto; color: #999; font-size: 11px; }}
+  #{table_id} .db-ctx-item:hover {{ background: var(--db-dropdown-hover); }}
+  #{table_id} .db-ctx-item .ctx-shortcut {{ margin-left: auto; color: var(--db-text-faint); font-size: 11px; }}
   #{table_id} .db-ctx-item.has-sub {{ position: relative; }}
-  #{table_id} .db-ctx-item.has-sub::after {{ content: '›'; margin-left: auto; font-size: 16px; color: #888; line-height: 1; }}
+  #{table_id} .db-ctx-item.has-sub::after {{ content: '›'; margin-left: auto; font-size: 16px; color: var(--db-text-faint); line-height: 1; }}
   #{table_id} .db-ctx-sub {{
-    position: absolute; left: 100%; top: -4px; min-width: 120px; background: #fff;
-    border: 1px solid #dce0e5; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    position: absolute; left: 100%; top: -4px; min-width: 120px; background: var(--db-dropdown-bg);
+    border: 1px solid var(--db-border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
     padding: 4px 0; display: none;
   }}
   #{table_id} .db-ctx-item.has-sub:hover .db-ctx-sub {{ display: block; }}
-  #{table_id} .db-ctx-sep {{ height: 1px; background: #e5e7eb; margin: 4px 0; }}
+  #{table_id} .db-ctx-sep {{ height: 1px; background: var(--db-border-subtle); margin: 4px 0; }}
 
   /* Side Panel */
   #{table_id} .db-side-panel {{
-    position: absolute; right: 0; top: 0; bottom: 0; width: 320px; background: #fff;
-    border-left: 1px solid #dce0e5; box-shadow: -4px 0 12px rgba(0,0,0,0.06);
+    position: absolute; right: 0; top: 0; bottom: 0; width: 320px; background: var(--db-dropdown-bg);
+    border-left: 1px solid var(--db-border); box-shadow: -4px 0 12px rgba(0,0,0,0.15);
     z-index: 50; display: none; flex-direction: column; overflow: hidden;
   }}
   #{table_id} .db-side-panel.open {{ display: flex; }}
   #{table_id} .db-side-header {{
     display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 14px; border-bottom: 1px solid #eaecf0; font-weight: 600; font-size: 13px; color: #333;
+    padding: 10px 14px; border-bottom: 1px solid var(--db-border-subtle); font-weight: 600; font-size: 13px; color: var(--db-text);
   }}
   #{table_id} .db-side-close {{ cursor: pointer; display: inline-flex; align-items: center; padding: 4px; border-radius: 4px; }}
-  #{table_id} .db-side-close:hover {{ background: #f0f1f3; }}
+  #{table_id} .db-side-close:hover {{ background: var(--db-topbar-hover); }}
   #{table_id} .db-side-body {{ flex: 1; overflow-y: auto; padding: 12px 14px; }}
   #{table_id} .db-side-row {{ margin-bottom: 10px; }}
-  #{table_id} .db-side-label {{ font-size: 11px; font-weight: 600; color: #888; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px; }}
-  #{table_id} .db-side-value {{ font-size: 13px; color: #1b1f23; word-break: break-all; }}
+  #{table_id} .db-side-label {{ font-size: 11px; font-weight: 600; color: var(--db-text-faint); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px; }}
+  #{table_id} .db-side-value {{ font-size: 13px; color: var(--db-text); word-break: break-all; }}
 
   /* View containers */
   #{table_id} .db-view {{ display: none; }}
@@ -353,12 +436,12 @@ def render_table_html(
   /* Data Profile */
   #{table_id} .db-profile {{ padding: 16px; overflow: auto; max-height: {height_px + 60}px; }}
   #{table_id} .db-profile table {{ font-size: 12px; }}
-  #{table_id} .db-profile th {{ background: #f3f5f8; padding: 8px 12px; text-align: left; font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid #dce0e5; }}
-  #{table_id} .db-profile td {{ padding: 7px 12px; border-bottom: 1px solid #f0f1f3; font-size: 12px; }}
+  #{table_id} .db-profile th {{ background: var(--db-header-bg); padding: 8px 12px; text-align: left; font-size: 11px; color: var(--db-text-subtle); text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid var(--db-border); }}
+  #{table_id} .db-profile td {{ padding: 7px 12px; border-bottom: 1px solid var(--db-border-light); font-size: 12px; }}
   #{table_id} .db-profile .db-spark {{
     display: inline-block; width: 80px; height: 20px; vertical-align: middle;
   }}
-  #{table_id} .db-profile .db-spark rect {{ fill: #1a73e8; opacity: 0.7; }}
+  #{table_id} .db-profile .db-spark rect {{ fill: var(--db-accent); opacity: 0.85; }}
 
   /* Visualization */
   #{table_id} .db-viz {{ padding: 16px; overflow: auto; max-height: {height_px + 60}px; }}
@@ -366,13 +449,13 @@ def render_table_html(
     display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;
   }}
   #{table_id} .db-viz-controls select {{
-    padding: 5px 10px; border: 1px solid #d0d5dd; border-radius: 4px; font-size: 12px;
-    font-family: inherit; color: #333; background: #fff; outline: none; cursor: pointer;
+    padding: 5px 10px; border: 1px solid var(--db-input-border); border-radius: 4px; font-size: 12px;
+    font-family: inherit; color: var(--db-text); background: var(--db-input-bg); outline: none; cursor: pointer;
   }}
-  #{table_id} .db-viz-controls select:focus {{ border-color: #1a73e8; }}
-  #{table_id} .db-viz-controls label {{ font-size: 12px; color: #555; font-weight: 500; }}
+  #{table_id} .db-viz-controls select:focus {{ border-color: var(--db-accent); }}
+  #{table_id} .db-viz-controls label {{ font-size: 12px; color: var(--db-text-subtle); font-weight: 500; }}
   #{table_id} .db-chart-area {{
-    background: #fafbfc; border: 1px solid #eaecf0; border-radius: 6px;
+    background: var(--db-toolbar-bg); border: 1px solid var(--db-border-subtle); border-radius: 6px;
     padding: 20px; min-height: 300px; position: relative;
   }}
   #{table_id} .db-chart-area svg {{ width: 100%; }}
@@ -380,46 +463,46 @@ def render_table_html(
   /* Status Bar */
   #{table_id} .db-status-bar {{
     display: flex; align-items: center; justify-content: space-between;
-    padding: 4px 12px; border-top: 1px solid #eaecf0; background: #f8f9fb;
-    font-size: 11px; color: #777;
+    padding: 4px 12px; border-top: 1px solid var(--db-border-subtle); background: var(--db-topbar-bg);
+    font-size: 11px; color: var(--db-text-faint);
   }}
 
   /* Profile Modal */
   #{table_id} .db-modal-backdrop {{
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.45); z-index: 5000;
+    background: var(--db-modal-backdrop); z-index: 5000;
     display: none; align-items: center; justify-content: center;
   }}
   #{table_id} .db-modal-backdrop.open {{ display: flex; }}
   #{table_id} .db-modal-card {{
-    background: #fff; border-radius: 8px; border: 1px solid #dce0e5;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.25); width: 640px; max-width: 92%;
+    background: var(--db-card-bg); border-radius: 8px; border: 1px solid var(--db-border);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.35); width: 640px; max-width: 92%;
     max-height: 85%; display: flex; flex-direction: column; overflow: hidden;
   }}
   #{table_id} .db-modal-header {{
     display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 16px; border-bottom: 1px solid #eaecf0; background: #f8f9fb;
-    font-weight: 600; font-size: 14px; color: #1b1f23;
+    padding: 10px 16px; border-bottom: 1px solid var(--db-border-subtle); background: var(--db-topbar-bg);
+    font-weight: 600; font-size: 14px; color: var(--db-text);
   }}
   #{table_id} .db-modal-close {{
     cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
-    padding: 4px 8px; border-radius: 4px; border: none; background: transparent; color: #666;
+    padding: 4px 8px; border-radius: 4px; border: none; background: transparent; color: var(--db-text-subtle);
     font-size: 14px; font-weight: bold;
   }}
-  #{table_id} .db-modal-close:hover {{ background: #eef1f5; color: #111; }}
+  #{table_id} .db-modal-close:hover {{ background: var(--db-topbar-hover); color: var(--db-text); }}
   #{table_id} .db-modal-body {{ padding: 16px; overflow-y: auto; flex: 1; }}
   #{table_id} .db-spark-btn {{
     cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px;
-    border-radius: 4px; border: 1px solid #e0e0e0; background: #fafafa; transition: all 0.15s;
+    border-radius: 4px; border: 1px solid var(--db-input-border); background: var(--db-input-bg); color: var(--db-text); transition: all 0.15s;
   }}
   #{table_id} .db-spark-btn:hover {{
-    background: #e8f0fe; border-color: #1a73e8; color: #1a73e8;
+    background: var(--db-accent-bg); border-color: var(--db-accent); color: var(--db-accent);
   }}
 
   /* Toast */
   #{table_id} .db-toast {{
     position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(10px);
-    background: #333; color: #fff; padding: 8px 18px; border-radius: 6px; font-size: 12px;
+    background: var(--db-toast-bg); color: var(--db-toast-text); padding: 8px 18px; border-radius: 6px; font-size: 12px;
     opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 200;
   }}
   #{table_id} .db-toast.show {{ opacity: 1; transform: translateX(-50%) translateY(0); }}
@@ -458,6 +541,9 @@ def render_table_html(
     </div>
     <button class="db-toolbar-btn" id="{table_id}_col_vis_btn">
       Columns {chevron}
+    </button>
+    <button class="db-toolbar-btn db-theme-toggle" id="{table_id}_theme_toggle" title="Toggle Light/Dark Theme">
+      {theme_btn_icon} <span>{theme_btn_label}</span>
     </button>
     <div id="{table_id}_filters" style="display:inline-flex;gap:4px;flex-wrap:wrap;">{stratify_pill}</div>
     <span class="db-row-summary" id="{table_id}_summary">{row_summary}</span>
@@ -584,6 +670,8 @@ def render_table_html(
   const TID = "{table_id}";
   const COLS = {col_meta_json};
   const DATA = {records_json};
+  const SUN_ICON = `{sun_icon}`;
+  const MOON_ICON = `{moon_icon}`;
   const ROOT = document.getElementById(TID);
 
   const $ = (id) => document.getElementById(id);
@@ -1293,7 +1381,8 @@ def render_table_html(
         const y = chartH - h;
         const bStart = (mn + (i / buckets) * range).toFixed(2);
         const bEnd = (mn + ((i + 1) / buckets) * range).toFixed(2);
-        svg += '<rect x="' + (x + 1) + '" y="' + y + '" width="' + (barW - 2) + '" height="' + h + '" rx="2" fill="#1a73e8" opacity="0.85"><title>Range: ' + bStart + ' - ' + bEnd + '\\nCount: ' + c + '</title></rect>';
+        const accentCol = getAccentColor();
+        svg += '<rect x="' + (x + 1) + '" y="' + y + '" width="' + (barW - 2) + '" height="' + h + '" rx="2" fill="' + accentCol + '" opacity="0.85"><title>Range: ' + bStart + ' - ' + bEnd + '\\nCount: ' + c + '</title></rect>';
         if (c > 0) svg += '<text x="' + (x + barW / 2) + '" y="' + (y - 4) + '" text-anchor="middle" font-size="10" fill="#444">' + c + '</text>';
       }});
       // Axes
@@ -1315,12 +1404,13 @@ def render_table_html(
       const svgH = entries.length * (barH + gap) + 20;
 
       let svg = '<svg viewBox="0 0 ' + (labelW + drawW + 60) + ' ' + svgH + '" style="width:100%;height:auto;">';
+      const accentCol = getAccentColor();
       entries.forEach(([label, count], i) => {{
         const y = i * (barH + gap) + 10;
         const w = (count / maxC) * drawW;
         const shortLabel = label.length > 20 ? label.substring(0, 18) + '…' : label;
         svg += '<text x="' + (labelW - 6) + '" y="' + (y + barH / 2 + 4) + '" text-anchor="end" font-size="11" fill="#333">' + esc(shortLabel) + '</text>';
-        svg += '<rect x="' + labelW + '" y="' + y + '" width="' + w + '" height="' + barH + '" rx="3" fill="#1a73e8" opacity="0.85"><title>' + esc(label) + ': ' + count + '</title></rect>';
+        svg += '<rect x="' + labelW + '" y="' + y + '" width="' + w + '" height="' + barH + '" rx="3" fill="' + accentCol + '" opacity="0.85"><title>' + esc(label) + ': ' + count + '</title></rect>';
         svg += '<text x="' + (labelW + w + 6) + '" y="' + (y + barH / 2 + 4) + '" font-size="11" fill="#555">' + count + '</text>';
       }});
       svg += '</svg>';
@@ -1329,6 +1419,10 @@ def render_table_html(
 
     bodyEl.innerHTML = html;
     modal.classList.add('open');
+  }}
+
+  function getAccentColor() {{
+    return ROOT.classList.contains('theme-dark') ? '#f97316' : '#1a73e8';
   }}
 
   /* ─── Data Profile ─── */
@@ -1478,6 +1572,7 @@ def render_table_html(
     }});
 
     const yLabel = yCol === '__row_count__' ? 'Count' : aggFunc + '(' + yCol + ')';
+    const accentCol = getAccentColor();
 
     if (chartType === 'line') {{
       // Line Chart
@@ -1494,9 +1589,9 @@ def render_table_html(
         const cx = padL + i * stepX;
         const cy = chartH - (d.y / maxY) * (chartH - padT);
         pts.push(cx + ',' + cy);
-        svg += '<circle cx="' + cx + '" cy="' + cy + '" r="4" fill="#1a73e8"><title>' + esc(d.x) + ': ' + d.y.toFixed(2) + '</title></circle>';
+        svg += '<circle cx="' + cx + '" cy="' + cy + '" r="4" fill="' + accentCol + '"><title>' + esc(d.x) + ': ' + d.y.toFixed(2) + '</title></circle>';
       }});
-      svg += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#1a73e8" stroke-width="2"/>';
+      svg += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + accentCol + '" stroke-width="2"/>';
       // Axis labels
       svg += '<text x="' + (chartW / 2) + '" y="' + (chartH + 34) + '" text-anchor="middle" font-size="11" font-weight="600" fill="#555">X: ' + esc(xCol) + '</text>';
       svg += '<text x="15" y="' + (chartH / 2) + '" text-anchor="middle" font-size="11" font-weight="600" fill="#555" transform="rotate(-90 15,' + (chartH / 2) + ')">' + esc(yLabel) + '</text>';
@@ -1513,7 +1608,7 @@ def render_table_html(
       aggResults.forEach((d, i) => {{
         const cx = padL + (i / Math.max(1, aggResults.length - 1)) * (chartW - padL);
         const cy = chartH - (d.y / maxY) * (chartH - padT);
-        svg += '<circle cx="' + cx + '" cy="' + cy + '" r="5" fill="#4285f4" opacity="0.75"><title>' + esc(d.x) + ': ' + d.y.toFixed(2) + '</title></circle>';
+        svg += '<circle cx="' + cx + '" cy="' + cy + '" r="5" fill="' + accentCol + '" opacity="0.75"><title>' + esc(d.x) + ': ' + d.y.toFixed(2) + '</title></circle>';
       }});
       svg += '<text x="' + (chartW / 2) + '" y="' + (chartH + 34) + '" text-anchor="middle" font-size="11" font-weight="600" fill="#555">X: ' + esc(xCol) + '</text>';
       svg += '<text x="15" y="' + (chartH / 2) + '" text-anchor="middle" font-size="11" font-weight="600" fill="#555" transform="rotate(-90 15,' + (chartH / 2) + ')">' + esc(yLabel) + '</text>';
@@ -1532,7 +1627,7 @@ def render_table_html(
         const w = (d.y / maxY) * drawW;
         const shortLabel = d.x.length > 20 ? d.x.substring(0, 18) + '…' : d.x;
         svg += '<text x="' + (labelW - 6) + '" y="' + (y + barH / 2 + 4) + '" text-anchor="end" font-size="11" fill="#444">' + esc(shortLabel) + '</text>';
-        svg += '<rect x="' + labelW + '" y="' + y + '" width="' + w + '" height="' + barH + '" rx="3" fill="#1a73e8" opacity="0.85"><title>' + esc(d.x) + '\\n' + yLabel + ': ' + d.y.toFixed(2) + '</title></rect>';
+        svg += '<rect x="' + labelW + '" y="' + y + '" width="' + w + '" height="' + barH + '" rx="3" fill="' + accentCol + '" opacity="0.85"><title>' + esc(d.x) + '\\n' + yLabel + ': ' + d.y.toFixed(2) + '</title></rect>';
         svg += '<text x="' + (labelW + w + 6) + '" y="' + (y + barH / 2 + 4) + '" font-size="11" fill="#555">' + (Number.isInteger(d.y) ? d.y : d.y.toFixed(2)) + '</text>';
       }});
       svg += '</svg>';
@@ -1565,6 +1660,24 @@ def render_table_html(
       document.removeEventListener('mouseup', onUp);
     }}
     handle.addEventListener('mousedown', onDown);
+  }}
+
+  /* ─── Theme Toggle Handler ─── */
+  const themeToggleBtn = $(TID + '_theme_toggle');
+  if (themeToggleBtn) {{
+    themeToggleBtn.addEventListener('click', () => {{
+      const isDark = ROOT.classList.contains('theme-dark');
+      if (isDark) {{
+        ROOT.classList.remove('theme-dark');
+        ROOT.classList.add('theme-light');
+        themeToggleBtn.innerHTML = MOON_ICON + ' <span>Dark</span>';
+      }} else {{
+        ROOT.classList.remove('theme-light');
+        ROOT.classList.add('theme-dark');
+        themeToggleBtn.innerHTML = SUN_ICON + ' <span>Light</span>';
+      }}
+      if (typeof renderChart === 'function') renderChart();
+    }});
   }}
 
   /* ─── Init ─── */

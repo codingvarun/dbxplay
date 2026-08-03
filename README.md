@@ -29,10 +29,18 @@ display(df)
 ## Usage & Examples
 
 ```python
-from dbxplay import display
+from dbxplay import display, init
 
-# Basic usage
+# Package-level theme initialization ('light' or 'dark')
+# In dark theme, highlights use vibrant orange instead of blue!
+init(theme="dark")
+
+# Basic usage (uses package default theme)
 display(df)
+
+# Override theme per display call
+display(df, theme="light")
+display(df, theme="dark")
 
 # Stratified sampling across categories (PySpark, Pandas, Polars)
 display(df, stratify_by="user_tier")
@@ -44,7 +52,7 @@ display(df, limit=5000)
 display(df, limit=None)
 
 # With options
-display(df, limit=500, title="My Data", height=400, stratify_by="country_code")
+display(df, limit=500, title="My Data", height=400, stratify_by="country_code", theme="dark")
 ```
 
 ### Parameters
@@ -56,6 +64,7 @@ display(df, limit=500, title="My Data", height=400, stratify_by="country_code")
 | `title` | str | "Table" | Tab title in the top bar |
 | `height` | int | None | Fixed height in px (auto-sizes to ~520px) |
 | `stratify_by` | str | None | Optional column name to perform stratified sampling across categories |
+| `theme` | str / None | None | Theme to render ('light' or 'dark'). Defaults to package theme set via `init(theme=...)` |
 
 ### Supported Data Types
 
@@ -69,6 +78,7 @@ display(df, limit=500, title="My Data", height=400, stratify_by="country_code")
 
 | Feature | Description |
 | :--- | :--- |
+| 🌙/☀️ **Theme Toggle** | Live Light / Dark theme toggle button in output toolbar (Dark theme uses orange highlights) |
 | 🔍 **Global Search** | Instant full-text search across all columns & values |
 | ↕️ **Column Sorting** | Click column headers to sort ascending/descending |
 | 🔽 **Column Filtering** | Per-column value checkbox dropdowns |

@@ -4,7 +4,7 @@ These are inline SVG strings matching the Databricks visual style.
 """
 
 
-def get_type_icon_svg(dtype_category: str) -> str:
+def get_type_icon_svg(dtype_category: str, accent_color: str = "var(--db-accent)") -> str:
     """Return an inline SVG icon for the given data type category.
 
     Categories: 'string', 'integer', 'float', 'boolean', 'datetime', 'complex'
@@ -15,7 +15,7 @@ def get_type_icon_svg(dtype_category: str) -> str:
             '<svg class="db-type-icon" viewBox="0 0 16 16" width="14" height="14" fill="none">'
             '<text x="1" y="12" font-size="7.5" font-weight="700" fill="#5f6368" '
             'font-family="Arial,sans-serif" letter-spacing="0.5">'
-            '<tspan fill="#1a73e8">A</tspan>'
+            f'<tspan fill="{accent_color}">A</tspan>'
             '<tspan fill="#5f6368">B</tspan>'
             '</text>'
             '<text x="10.5" y="8" font-size="5.5" font-weight="600" fill="#5f6368" '
@@ -41,7 +41,7 @@ def get_type_icon_svg(dtype_category: str) -> str:
             '<svg class="db-type-icon" viewBox="0 0 16 16" width="14" height="14" fill="none">'
             '<text x="0" y="12" font-size="7.5" font-weight="700" fill="#5f6368" '
             'font-family="Arial,sans-serif">'
-            '<tspan fill="#1a73e8">T</tspan>'
+            f'<tspan fill="{accent_color}">T</tspan>'
             '<tspan fill="#5f6368">/F</tspan>'
             '</text>'
             '</svg>'
@@ -53,7 +53,7 @@ def get_type_icon_svg(dtype_category: str) -> str:
             '<line x1="1" y1="7" x2="15" y2="7" stroke="#5f6368" stroke-width="1.3"/>'
             '<line x1="5" y1="1" x2="5" y2="5" stroke="#5f6368" stroke-width="1.3" stroke-linecap="round"/>'
             '<line x1="11" y1="1" x2="11" y2="5" stroke="#5f6368" stroke-width="1.3" stroke-linecap="round"/>'
-            '<rect x="4" y="9.5" width="2.5" height="2" rx="0.5" fill="#1a73e8"/>'
+            f'<rect x="4" y="9.5" width="2.5" height="2" rx="0.5" fill="{accent_color}"/>'
             '</svg>'
         ),
         # Braces icon for complex/json columns
@@ -167,5 +167,24 @@ def get_close_svg(size: int = 12) -> str:
         f'<svg viewBox="0 0 10 10" width="{size}" height="{size}" fill="none">'
         f'<path d="M2 2L8 8M8 2L2 8" stroke="#666" stroke-width="1.5" '
         f'stroke-linecap="round"/>'
+        f'</svg>'
+    )
+
+
+def get_sun_icon_svg(size: int = 14) -> str:
+    """Return a sun icon SVG for theme toggle."""
+    return (
+        f'<svg viewBox="0 0 16 16" width="{size}" height="{size}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">'
+        f'<circle cx="8" cy="8" r="3.5"/>'
+        f'<path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>'
+        f'</svg>'
+    )
+
+
+def get_moon_icon_svg(size: int = 14) -> str:
+    """Return a moon icon SVG for theme toggle."""
+    return (
+        f'<svg viewBox="0 0 16 16" width="{size}" height="{size}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">'
+        f'<path d="M14 9.5A6 6 0 116.5 2 4.5 4.5 0 0014 9.5z"/>'
         f'</svg>'
     )

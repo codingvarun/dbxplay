@@ -315,12 +315,45 @@ def _convert_to_records(
     )
 
 
+_DEFAULT_THEME: str = "light"
+
+
+def set_theme(theme: str) -> None:
+    """Set the default theme for dbxplay displays ('light' or 'dark').
+
+    Args:
+        theme: Theme string ('light' or 'dark').
+    """
+    global _DEFAULT_THEME
+    if not isinstance(theme, str):
+        raise ValueError(f"Invalid theme type '{type(theme).__name__}'. Supported themes are 'light' and 'dark'.")
+    theme_clean = theme.lower().strip()
+    if theme_clean not in ("light", "dark"):
+        raise ValueError(f"Invalid theme '{theme}'. Supported themes are 'light' and 'dark'.")
+    _DEFAULT_THEME = theme_clean
+
+
+def get_theme() -> str:
+    """Get the current default theme."""
+    return _DEFAULT_THEME
+
+
+def init(theme: str = "light") -> None:
+    """Initialize the dbxplay package configuration.
+
+    Args:
+        theme: Default theme for display tables ('light' or 'dark').
+    """
+    set_theme(theme)
+
+
 def display(
     data: Any,
     limit: Optional[int] = 1000,
     title: str = "Table",
     height: Optional[int] = None,
     stratify_by: Optional[Any] = None,
+    theme: Optional[str] = None,
 ) -> None:
     """Display a DataFrame or data structure in an interactive Databricks-style table.
 
@@ -332,8 +365,16 @@ def display(
         height: Optional fixed height in pixels for the table container. If None,
                 the table auto-sizes up to ~520px then scrolls.
         stratify_by: Optional column name, PySpark Column expression, or SQL expression string.
+        theme: Optional theme ('light' or 'dark'). If None, uses the package default theme.
     """
     from IPython.display import display as ipy_display, HTML
+
+    if theme is not None:
+        if not isinstance(theme, str) or theme.lower().strip() not in ("light", "dark"):
+            raise ValueError(f"Invalid theme '{theme}'. Supported themes are 'light' and 'dark'.")
+        eff_theme = theme.lower().strip()
+    else:
+        eff_theme = get_theme()
 
     records, columns, total_rows, truncated = _convert_to_records(
         data, limit=limit, stratify_by=stratify_by
@@ -360,6 +401,7 @@ def display(
         title=title,
         height=height,
         stratify_by=stratify_label,
+        theme=eff_theme,
     )
 
     ipy_display(HTML(html_str))

@@ -48,15 +48,28 @@ def main():
     records, columns, total_rows, truncated = _convert_to_records(data, limit=1000)
     safe_records = [{k: _safe_str(v) for k, v in row.items()} for row in records]
 
-    table_id = "db_demo_" + uuid.uuid4().hex[:8]
-    html = render_table_html(
-        table_id=table_id,
+    table_id_light = "db_demo_light_" + uuid.uuid4().hex[:6]
+    html_light = render_table_html(
+        table_id=table_id_light,
         records=safe_records,
         columns=columns,
         total_rows=total_rows,
         truncated=truncated,
         limit=1000,
-        title="Table",
+        title="Light Theme Table",
+        theme="light",
+    )
+
+    table_id_dark = "db_demo_dark_" + uuid.uuid4().hex[:6]
+    html_dark = render_table_html(
+        table_id=table_id_dark,
+        records=safe_records,
+        columns=columns,
+        total_rows=total_rows,
+        truncated=truncated,
+        limit=1000,
+        title="Dark Theme Table",
+        theme="dark",
     )
 
     # Wrap in a full HTML page
@@ -65,37 +78,48 @@ def main():
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Databricks Display Demo</title>
+<title>Databricks Display Demo - Light & Dark Theme</title>
 <style>
   body {{
     margin: 40px auto;
     max-width: 1200px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #f5f7fa;
-    color: #333;
+    background: #121214;
+    color: #e1e4e8;
+    padding: 0 20px;
   }}
   h1 {{
-    font-size: 20px;
-    color: #1b1f23;
-    margin-bottom: 16px;
+    font-size: 22px;
+    color: #ffffff;
+    margin-bottom: 8px;
+  }}
+  h2 {{
+    font-size: 16px;
+    color: #ff9d42;
+    margin-top: 36px;
+    margin-bottom: 12px;
   }}
   .demo-note {{
     font-size: 13px;
-    color: #666;
+    color: #9da5b4;
     margin-bottom: 24px;
     line-height: 1.6;
   }}
 </style>
 </head>
 <body>
-<h1>📊 databricks_display — Demo</h1>
+<h1>📊 databricks_display — Light & Dark Theme Demo</h1>
 <p class="demo-note">
-  This is a self-contained demo of the Databricks-style <code>display()</code> table.<br>
-  Try: <strong>sorting columns</strong>, <strong>right-clicking cells</strong> (context menu),
-  <strong>searching</strong>, <strong>filtering</strong>, <strong>downloading CSV/Excel</strong>,
-  and <strong>resizing columns</strong>.
+  Demonstrating light theme (blue highlights) and dark theme (orange highlights).<br>
+  Try: <strong>sorting columns</strong>, <strong>right-clicking cells</strong>, <strong>searching</strong>, <strong>filtering</strong>, and <strong>tab additions</strong>.
 </p>
-{html}
+
+<h2>☀️ Light Theme (Blue Highlights)</h2>
+{html_light}
+
+<h2>🌙 Dark Theme (Orange Highlights)</h2>
+{html_dark}
+
 </body>
 </html>"""
 

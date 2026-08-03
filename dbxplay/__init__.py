@@ -7,7 +7,7 @@ Usage:
     display(df)
 """
 
-from dbxplay.core import display
+from dbxplay.core import display, init, set_theme, get_theme
 
-__version__ = "0.2.2"
-__all__ = ["display"]
+__version__ = "0.2.3"
+__all__ = ["display", "init", "set_theme", "get_theme"]

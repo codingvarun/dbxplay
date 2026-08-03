@@ -263,6 +263,65 @@ def test_display_unlimited_limit():
     assert truncated is False
 
 
+def test_init_and_set_theme():
+    """Test package-level theme initialization and settings."""
+    from dbxplay import init, set_theme, get_theme
+
+    # Reset to default light
+    set_theme("light")
+    assert get_theme() == "light"
+
+    init(theme="dark")
+    assert get_theme() == "dark"
+
+    init(theme="light")
+    assert get_theme() == "light"
+
+    with pytest.raises(ValueError, match="Invalid theme"):
+        init(theme="blue")
+
+    with pytest.raises(ValueError, match="Invalid theme"):
+        set_theme("invalid_theme")
+
+
+def test_render_table_html_light_theme():
+    """Test HTML rendering with light theme uses blue accents and theme toggle button."""
+    from dbxplay.templates import render_table_html
+
+    html = render_table_html(
+        table_id="test_light",
+        records=[{"col1": "A", "val": "1"}],
+        columns=[{"name": "col1", "dtype_category": "string"}],
+        total_rows=1,
+        truncated=False,
+        limit=100,
+        theme="light",
+    )
+    assert "theme-light" in html
+    assert "--db-accent: #1a73e8;" in html
+    assert "db-theme-toggle" in html
+    assert "test_light_theme_toggle" in html
+
+
+def test_render_table_html_dark_theme():
+    """Test HTML rendering with dark theme uses orange accents and theme toggle button."""
+    from dbxplay.templates import render_table_html
+
+    html = render_table_html(
+        table_id="test_dark",
+        records=[{"col1": "A", "val": "1"}],
+        columns=[{"name": "col1", "dtype_category": "string"}],
+        total_rows=1,
+        truncated=False,
+        limit=100,
+        theme="dark",
+    )
+    assert "theme-dark" in html
+    assert "--db-accent: #f97316;" in html
+    assert "db-theme-toggle" in html
+    assert "test_dark_theme_toggle" in html
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 
